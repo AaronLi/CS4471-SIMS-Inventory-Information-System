@@ -1,4 +1,4 @@
-from proto.iis_pb2_grpc import SimsInventoryInformationSystemServicer
+from backend_proto.iis_pb2_grpc import SimsInventoryInformationSystemServicer
 
 
 class BackendServer(SimsInventoryInformationSystemServicer):
