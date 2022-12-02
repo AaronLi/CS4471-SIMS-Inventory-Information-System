@@ -46,7 +46,7 @@ class InventoryDB:
         self.cur.execute("CREATE TABLE IF NOT EXISTS itemhastag(PRIMARY KEY(itemID, tagname), FOREIGN KEY (itemID) REFERENCES item(itemID), FOREIGN KEY (tagname) REFERENCES tag(tagname)")
     
     def __del__(self):
-            self.conn.close()
+        self.conn.close()
     # except Error as e:
         # print(e)
     # finally:
@@ -54,8 +54,8 @@ class InventoryDB:
             # conn.close()
 
     
-    def insert_item(self, itemidparam, stock, descr, price, slotnum):
-        self.cur.execute(f"INSERT INTO item (itemID, stock, description, price, slotnum) VALUES ({itemidparam}, {stock}, {descr}, {price}, {slotnum})")
+    def insert_item(self, itemid, stock, descr, price, slotnum):
+        self.cur.execute(f"INSERT INTO item (itemID, stock, description, price, slotnum) VALUES ({itemid}, {stock}, {descr}, {price}, {slotnum})")
         self.conn.commit()
 
     def insert_user(self, userid):
