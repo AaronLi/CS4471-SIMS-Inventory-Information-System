@@ -49,8 +49,8 @@ def create_tables(cur):
         cur.execute("CREATE TABLE IF NOT EXISTS shelf(PRIMARY KEY(shelfID), slotcount INT NOT NULL, FOREIGN KEY (userID) REFERENCES user(userID) ON DELETE CASCADE")
         cur.execute("CREATE TABLE IF NOT EXISTS slot(PRIMARY KEY(slotnum), capacity INT NOT NULL, itemcount INT NOT NULL, PRIMARY KEY(shelfID), FOREIGN KEY(shelfID) REFERENCES shelf(shelfID)")
         cur.execute("CREATE TABLE IF NOT EXISTS item(PRIMARY KEY(itemID), stock INT NOT NULL, VARCHAR(30) description, price DECIMAL(19,2), FOREIGN KEY (slotnum) REFERENCES slot(slotnum) ON DELETE CASCADE")
-        cur.execute("CREATE TABLE tag(PRIMARY KEY(tagname), itemcount INT NOT NULL)")
-        cur.execute("CREATE TABLE itemhastag(PRIMARY KEY(itemID, tagname), FOREIGN KEY (itemID) REFERENCES item(itemID), FOREIGN KEY (tagname) REFERENCES tag(tagname)")
+        cur.execute("CREATE TABLE IF NOT EXISTS tag(PRIMARY KEY(tagname), itemcount INT NOT NULL)")
+        cur.execute("CREATE TABLE IF NOT EXISTS itemhastag(PRIMARY KEY(itemID, tagname), FOREIGN KEY (itemID) REFERENCES item(itemID), FOREIGN KEY (tagname) REFERENCES tag(tagname)")
 
     except Error as e:
         print(e)
