@@ -1,5 +1,14 @@
 from backend_proto.iis_pb2_grpc import SimsInventoryInformationSystemServicer
 
+from concurrent import futures
+
+import backend_proto.iis_pb2_grpc as backend_grpc
+import grpc
+import time
+import sqlite3
+import logging
+import secrets
+from base64 import b64encode
 
 class BackendServer(SimsInventoryInformationSystemServicer):
     def CreateUser(self, request, context):
@@ -52,4 +61,9 @@ class BackendServer(SimsInventoryInformationSystemServicer):
 
 
 if __name__ == '__main__':
-    print("Hello, World!")
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
+    backend_grpc.add_SimsInventoryInformationSystemServicer_to_server(BackendServer(), server)
+    server.add_insecure_port('[::]:50051')
+    server.start()
+    print("Running")
+    server.wait_for_termination()
