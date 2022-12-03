@@ -26,9 +26,9 @@ class InventoryDB:
 
         db_file = "inventory.db"
 
-        conn = None
-        conn = sqlite3.connect(db_file)
-        cur = conn.cursor()
+        self.conn = None
+        self.conn = sqlite3.connect(db_file,check_same_thread=False)
+        self.cur = self.conn.cursor()
 
     # def create_tables(self):
     # conn = None
@@ -38,12 +38,13 @@ class InventoryDB:
 
     #     # Create tables
     #     cur = conn.cursor()
-        self.self.cur.execute("CREATE TABLE IF NOT EXISTS user(PRIMARY KEY(userID))")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS shelf(PRIMARY KEY(shelfID), slotcount INT NOT NULL, FOREIGN KEY (userID) REFERENCES user(userID) ON DELETE CASCADE")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS slot(PRIMARY KEY(slotnum), capacity INT NOT NULL, itemcount INT NOT NULL, PRIMARY KEY(shelfID), FOREIGN KEY(shelfID) REFERENCES shelf(shelfID)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS item(PRIMARY KEY(itemID), stock INT NOT NULL, VARCHAR(30) description, price DECIMAL(19,2), FOREIGN KEY (slotnum) REFERENCES slot(slotnum) ON DELETE CASCADE")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS tag(PRIMARY KEY(tagname), itemcount INT NOT NULL)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS itemhastag(PRIMARY KEY(itemID, tagname), FOREIGN KEY (itemID) REFERENCES item(itemID), FOREIGN KEY (tagname) REFERENCES tag(tagname)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS user(user_id TEXT PRIMARY KEY)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS shelf(shelfID TEXT PRIMARY KEY, slotcount INTEGER NOT NULL, user_id TEXT, FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS slot(slotnum INTEGER, capacity INTEGER NOT NULL, itemcount INTEGER NOT NULL, shelfID TEXT, PRIMARY KEY(slotnum, shelfID) FOREIGN KEY(shelfID) REFERENCES shelf(shelfID))")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS item(itemID INTEGER PRIMARY KEY, stock INTEGER NOT NULL, description TEXT, price FLOAT, slotnum INTEGER, shelfID TEXT, FOREIGN KEY (slotnum) REFERENCES slot(slotnum), FOREIGN KEY (shelfID) REFERENCES slot(shelfID) ON DELETE CASCADE)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS tag(tagname TEXT PRIMARY KEY, itemcount INTEGER NOT NULL)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS itemhastag(itemID INTEGER, tagname TEXT, PRIMARY KEY(itemID, tagname), FOREIGN KEY (itemID) REFERENCES item(itemID), FOREIGN KEY (tagname) REFERENCES tag(tagname))")
+        self.conn.commit()
     
     def __del__(self):
         self.conn.close()
@@ -54,25 +55,40 @@ class InventoryDB:
             # conn.close()
 
     
-    def insert_item(self, itemid, stock, descr, price, slotnum):
-        self.cur.execute(f"INSERT INTO item (itemID, stock, description, price, slotnum) VALUES ({itemid}, {stock}, {descr}, {price}, {slotnum})")
+    def insert_item(self, itemid, stock, descr, price, slotnum, shelfID):
+        self.cur.execute(f"INSERT INTO item (itemID, stock, description, price, slotnum, shelfID) VALUES (?,?,?,?,?,?)",(itemid, stock, descr, price, slotnum, shelfID))
         self.conn.commit()
 
     def insert_user(self, userid):
-        self.cur.execute(f"INSERT INTO user (userID) VALUES ({userid})")
+        self.cur.execute(f"INSERT INTO user (user_id) VALUES (:userid)",{"userid":userid})
         self.conn.commit()
 
     def insert_shelf(self, shelfid, slotcount, userid):
-        self.cur.execute(f"INSERT INTO shelf (shelfIDparam, slotcounparamt, useridparam) VALUES ({shelfid}, {slotcount}, {userid})")
+        self.cur.execute(f"INSERT INTO shelf (shelfID, slotcount, user_id) VALUES (?,?,?)",(shelfid, slotcount, userid))
         self.conn.commit()
 
     def insert_slot(self, slotnum, capacity, itemcount, shelfid):
-        self.cur.execute(f"INSERT INTO slot (slotnum, capacity, itemcount, shelfid) VALUES ({slotnum}, {capacity}, {itemcount}, {shelfid})")
+        self.cur.execute(f"INSERT INTO slot (slotnum, capacity, itemcount, shelfid) VALUES (?,?,?,?)",(slotnum, capacity, itemcount, shelfid))
         self.conn.commit()
 
     def insert_tag(self, tagname, itemcount):
-        self.cur.execute(f"INSERT INTO tag (itemID, stock, description, price, slotnum) VALUES ({tagname}, {itemcount})")
+        self.cur.execute(f"INSERT INTO tag (itemID, stock, description, price, slotnum) VALUES (?,?)",(tagname, itemcount))
         self.conn.commit()
+
+    def get_item(self, itemID=None, shelfID=None): 
+        cur = None 
+        if itemID:
+            cur = self.cur.execute("""SELECT * FROM item WHERE itemID = :itemID""",{"shelfid":itemID})
+            
+        else:
+            if shelfID:
+                cur = self.cur.execute("""SELECT * FROM item WHERE shelfID = :shelfID""",{"shelfID":shelfID})
+            else:
+                cur = self.cur.execute("""SELECT * FROM item""")
+        return cur.fetchall()
+
+    def get_shelf(self, shelfID):
+        self.cur.execute("""SELECT * FROM item WHERE shelfID = :shelfID""",{"shelfID":shelfID})
 
     def remove_item(self, itemid):
         self.cur.execute(f"REMOVE FROM item WHERE itemID='{itemid}")
