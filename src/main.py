@@ -64,8 +64,25 @@ class BackendServer(SimsInventoryInformationSystemServicer):
         return super().CreateSlots(request, context)
 
     def CreateItem(self, request, context):
+        shelf_result = db.get_shelf(request.user_id)
+        slot_result = []
+        for shelf in shelf_result:
+            if shelf[0] == request.info.shelf_id:
+                slotsPerShelf = db.get_slot(shelf[0])
+                for s in slotsPerShelf:
+                    slot_result.append(s)
+                break
+        print("slot reust",slot_result)
+        foundslot = None
+        for slot in slot_result:
+            if slot[1] >= request.info.stock:
+                foundslot = slot
+                print(foundslot)
+                break
+        db.insert_item(request.info.object_id,request.info.stock,request.info.description,request.info.price,foundslot[0],foundslot[3])
+        db.update_slot(foundslot[0],foundslot[1]-request.info.stock,foundslot[2]+request.info.stock,request.info.shelf_id)
+        return item_messages.CreateItemResponse(shelf_id=foundslot[3],slot=foundslot[0])
 
-        return super().CreateItem(request, context)
 
     def ReadItem(self, request, context):
         result = None

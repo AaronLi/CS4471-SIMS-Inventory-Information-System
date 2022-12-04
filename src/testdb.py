@@ -17,6 +17,9 @@ from base64 import b64encode
 
 testdb = InventoryDB()
 testdb.insert_user("usertest")
-# testdb.insert_shelf("shelf1", 12, "usertest")
-# testdb.insert_slot(1,20,0,"shelf1")
-# testdb.insert_item(1223,10,"test object",10.5,1,"shelf1")
+testdb.insert_shelf("shelf1", 12, "usertest")
+testdb.insert_slot(1,20,0,"shelf1")
+testdb.insert_item(1223,10,"test object",10.5,1,"shelf1")
+testdb.insert_slot(2,30,0,"shelf1")
+testdb.insert_slot(1,30,0,"shelf2")
+# print(testdb.get_slot("shelf1"))

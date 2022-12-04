@@ -88,8 +88,16 @@ class InventoryDB:
                 cur = self.cur.execute("""SELECT * FROM item""")
         return cur.fetchall()
 
+    def update_slot(self, slotnum, capacity, itemcount, shelfid):
+        self.cur.execute("""UPDATE slot SET capacity = ?, itemcount = ? WHERE slotnum = ? AND shelfID = ?""",(capacity, itemcount, slotnum, shelfid))
+        self.conn.commit()
+            
     def get_shelf(self, userID):
         cur = self.cur.execute("""SELECT * FROM shelf WHERE user_id = :user_id""",{"user_id":userID})
+        return cur.fetchall()
+
+    def get_slot(self,shelfID):
+        cur = self.cur.execute("""SELECT * FROM slot WHERE shelfID = :shelfID""",{"shelfID":shelfID})
         return cur.fetchall()
 
     def remove_item(self, itemid):
