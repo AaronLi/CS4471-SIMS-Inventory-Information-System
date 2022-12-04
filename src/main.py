@@ -1,8 +1,13 @@
 from backend_proto.iis_pb2_grpc import SimsInventoryInformationSystemServicer
-
+from db_operations import InventoryDB
 from concurrent import futures
 
 import backend_proto.iis_pb2_grpc as backend_grpc
+import backend_proto.item_messages_pb2 as item_messages
+import backend_proto.shelf_messages_pb2 as shelf_messages
+import backend_proto.slot_messages_pb2 as slot_messages
+import backend_proto.user_messages_pb2 as user_messages
+
 import grpc
 import time
 import sqlite3
@@ -11,8 +16,12 @@ import secrets
 from base64 import b64encode
 
 class BackendServer(SimsInventoryInformationSystemServicer):
+    def __init__(self):
+        self.db = InventoryDB()
+
     def CreateUser(self, request, context):
-        return super().CreateUser(request, context)
+        self.db.insert_user(request.info.user_id)
+        return user_messages.CreateUserResponse()
 
     def ReadUser(self, request, context):
         return super().ReadUser(request, context)
@@ -21,10 +30,17 @@ class BackendServer(SimsInventoryInformationSystemServicer):
         return super().DeleteUser(request, context)
 
     def CreateShelf(self, request, context):
-        return super().CreateShelf(request, context)
+        self.db.insert_shelf(request.info.shelf_id, request.info.shelf_count, request.user_id)
+        return shelf_messages.CreateShelfResponse()
 
     def ReadShelf(self, request, context):
-        return super().ReadShelf(request, context)
+        returnList = []
+        result = self.db.get_shelf(request.user_id)
+        if result:
+            for entry in result:
+                returnList.append(shelf_messages.ShelfInfo(shelf_id=entry[0],shelf_count=entry[1]))
+        print(result,returnList)
+        return shelf_messages.ReadShelfResponse(info=returnList)
 
     def UpdateShelf(self, request, context):
         return super().UpdateShelf(request, context)
@@ -48,10 +64,46 @@ class BackendServer(SimsInventoryInformationSystemServicer):
         return super().CreateSlots(request, context)
 
     def CreateItem(self, request, context):
-        return super().CreateItem(request, context)
+        shelf_result = db.get_shelf(request.user_id)
+        slot_result = []
+        for shelf in shelf_result:
+            if shelf[0] == request.info.shelf_id:
+                slotsPerShelf = db.get_slot(shelf[0])
+                for s in slotsPerShelf:
+                    slot_result.append(s)
+                break
+        print("slot reust",slot_result)
+        foundslot = None
+        for slot in slot_result:
+            if slot[1] >= request.info.stock:
+                foundslot = slot
+                print(foundslot)
+                break
+        db.insert_item(request.info.object_id,request.info.stock,request.info.description,request.info.price,foundslot[0],foundslot[3])
+        db.update_slot(foundslot[0],foundslot[1]-request.info.stock,foundslot[2]+request.info.stock,request.info.shelf_id)
+        return item_messages.CreateItemResponse(shelf_id=foundslot[3],slot=foundslot[0])
+
 
     def ReadItem(self, request, context):
-        return super().ReadItem(request, context)
+        result = None
+        returnList = []
+        if request.item_id != 0:
+            print("item id here")
+            result = self.db.get_item(itemID=request.item_id,shelfID=None)
+        else:
+            if request.shelf_id != "":
+                print("shelf id here")
+                result = self.db.get_item(itemID=None,shelfID=request.shelf_id)
+            else:
+                print("item id here")
+                result = self.db.get_item()
+
+        if result is not None:
+            for entry in result:
+                returnList.append(item_messages.ItemInfo(description=entry[2],object_id=entry[0],shelf_id=entry[5],price=entry[3],stock=entry[1]))
+        print(result,returnList)
+        
+        return item_messages.ReadItemResponse(info=returnList)
 
     def UpdateItem(self, request, context):
         return super().UpdateItem(request, context)
@@ -61,9 +113,12 @@ class BackendServer(SimsInventoryInformationSystemServicer):
 
 
 if __name__ == '__main__':
+    db = InventoryDB()
+    #db.create_tables()
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
     backend_grpc.add_SimsInventoryInformationSystemServicer_to_server(BackendServer(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:50052')
     server.start()
     print("Running")
     server.wait_for_termination()
