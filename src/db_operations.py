@@ -77,8 +77,9 @@ class InventoryDB:
 
     def get_item(self, itemID=None, shelfID=None): 
         cur = None 
+
         if itemID:
-            cur = self.cur.execute("""SELECT * FROM item WHERE itemID = :itemID""",{"shelfid":itemID})
+            cur = self.cur.execute("""SELECT * FROM item WHERE itemID = :itemID""",{"itemID":itemID})
             
         else:
             if shelfID:
@@ -87,8 +88,9 @@ class InventoryDB:
                 cur = self.cur.execute("""SELECT * FROM item""")
         return cur.fetchall()
 
-    def get_shelf(self, shelfID):
-        self.cur.execute("""SELECT * FROM item WHERE shelfID = :shelfID""",{"shelfID":shelfID})
+    def get_shelf(self, userID):
+        cur = self.cur.execute("""SELECT * FROM shelf WHERE user_id = :user_id""",{"user_id":userID})
+        return cur.fetchall()
 
     def remove_item(self, itemid):
         self.cur.execute(f"REMOVE FROM item WHERE itemID='{itemid}")

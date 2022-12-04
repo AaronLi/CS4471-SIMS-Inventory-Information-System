@@ -30,10 +30,17 @@ class BackendServer(SimsInventoryInformationSystemServicer):
         return super().DeleteUser(request, context)
 
     def CreateShelf(self, request, context):
-        return super().CreateShelf(request, context)
+        self.db.insert_shelf(request.info.shelf_id, request.info.shelf_count, request.user_id)
+        return shelf_messages.CreateShelfResponse()
 
     def ReadShelf(self, request, context):
-        return super().ReadShelf(request, context)
+        returnList = []
+        result = self.db.get_shelf(request.user_id)
+        if result:
+            for entry in result:
+                returnList.append(shelf_messages.ShelfInfo(shelf_id=entry[0],shelf_count=entry[1]))
+        print(result,returnList)
+        return shelf_messages.ReadShelfResponse(info=returnList)
 
     def UpdateShelf(self, request, context):
         return super().UpdateShelf(request, context)
@@ -77,11 +84,9 @@ class BackendServer(SimsInventoryInformationSystemServicer):
         if result is not None:
             for entry in result:
                 returnList.append(item_messages.ItemInfo(description=entry[2],object_id=entry[0],shelf_id=entry[5],price=entry[3],stock=entry[1]))
-            print(result,returnList)
+        print(result,returnList)
         
         return item_messages.ReadItemResponse(info=returnList)
-
-        return super().ReadItem(request, context)
 
     def UpdateItem(self, request, context):
         return super().UpdateItem(request, context)
